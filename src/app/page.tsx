@@ -1,69 +1,95 @@
-import Image from "next/image";
+import Link from "next/link";
+
+const citizenFeatures = [
+  "Resident profile management",
+  "Document request tracking",
+  "Secure supporting file upload",
+  "Issued document download",
+];
+
+const staffFeatures = [
+  "Request review queue",
+  "Profile verification",
+  "Approval and rejection workflow",
+  "QR-verified document issuance",
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-zinc-100 px-4 py-10 text-zinc-900">
+      <div className="mx-auto max-w-6xl">
+        <header className="flex flex-col gap-4 border-b border-emerald-100 pb-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-800">KoneBarangay</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Barangay services, simplified.</h1>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-md bg-emerald-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900"
+              href="/login"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Resident sign in
+            </Link>
+            <Link
+              className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
+              href="/register"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              Create account
+            </Link>
+          </div>
+        </header>
+
+        <section className="grid gap-8 py-12 md:grid-cols-[1.2fr_0.8fr] md:items-center">
+          <div>
+            <p className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-900">
+              Digital barangay office
+            </p>
+            <h2 className="mt-5 max-w-xl text-4xl font-bold tracking-tight text-zinc-950 md:text-5xl">
+              Request documents and manage resident records online.
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-700">
+              KoneBarangay helps residents submit document requests, maintain profile records, and receive secure issued documents while staff review requests and issue verified barangay documents through a streamlined digital workflow.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                className="rounded-md bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                href="/resident/requests"
+              >
+                Go to resident portal
+              </Link>
+              <Link
+                className="rounded-md border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
+                href="/staff/requests"
+              >
+                Staff dashboard
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm ring-1 ring-slate-200/60">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-800">Included services</p>
+            <ul className="mt-5 space-y-4 text-sm text-zinc-700">
+              {citizenFeatures.map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <span className="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" aria-hidden="true" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 rounded-xl bg-emerald-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">Staff workflow</p>
+              <ul className="mt-3 space-y-2 text-sm text-zinc-700">
+                {staffFeatures.map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-700" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
