@@ -128,23 +128,22 @@ export function StaffRequestQueue() {
     return () => { isCurrent = false; };
   }, [page, pageSize, router, search, status]);
 
-  if (isLoading) return <p className="text-sm text-zinc-600">Loading requests...</p>;
+  if (isLoading) return <p className="loading-state" role="status">Loading request queue...</p>;
 
   if (isForbidden) {
     return (
-      <div className="rounded-md border border-amber-300 bg-amber-50 p-5 text-sm text-zinc-800">
+      <div className="notice-panel notice-panel--warning">
         This account does not have staff access. Ask an administrator to provision a staff role.
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
-        <label className="space-y-1 text-sm font-medium text-zinc-800">
+    <div className="queue-view">
+      <div className="queue-toolbar">
+        <label className="queue-filter">
           Search requests
           <input
-            className="block min-w-64 rounded-md border border-zinc-300 bg-white px-3 py-2 font-normal"
             onChange={(event) => setSearchInput(event.target.value)}
             maxLength={100}
             placeholder="Receipt or resident name"
@@ -152,10 +151,9 @@ export function StaffRequestQueue() {
             value={searchInput}
           />
         </label>
-        <label className="space-y-1 text-sm font-medium text-zinc-800">
+        <label className="queue-filter">
           Request status
           <select
-            className="block min-w-52 rounded-md border border-zinc-300 bg-white px-3 py-2 font-normal"
             onChange={(event) => {
               setIsLoading(true);
               setMessage("");
@@ -169,26 +167,27 @@ export function StaffRequestQueue() {
             ))}
           </select>
         </label>
-        <p className="text-sm text-zinc-600">
-          {total} request{total === 1 ? "" : "s"}
-          {total > 0 && ` · Showing ${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)}`}
+        <p className="queue-total">
+          <strong>{total}</strong> request{total === 1 ? "" : "s"}
+          {total > 0 && <span>Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)}</span>}
         </p>
       </div>
 
-      {message && <p aria-live="polite" className="py-4 text-sm text-red-700">{message}</p>}
+      {message && <p aria-live="polite" className="queue-error">{message}</p>}
       {isLoading ? (
-        <p className="py-8 text-sm text-zinc-600">Loading requests...</p>
+        <p className="loading-state" role="status">Loading requests...</p>
       ) : requests.length === 0 ? (
-        <p className="py-8 text-sm text-zinc-600">
+        <p className="empty-state">
           {search ? "No requests match your search." : "No requests in this status."}
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] border-collapse text-left text-sm">
+        <div className="queue-table-wrap">
+          <table className="queue-table">
             <thead>
               <tr className="border-b border-zinc-200 text-xs uppercase text-zinc-500">
                 <th className="py-3 pr-4 font-medium">Resident / receipt</th>
                 <th className="py-3 pr-4 font-medium">Document</th>
+                <th className="py-3 pr-4 font-medium">Status</th>
                 <th className="py-3 pr-4 font-medium">Submitted</th>
                 <th className="py-3 pr-4 font-medium">Files</th>
                 <th className="py-3 font-medium">Review</th>
@@ -196,7 +195,7 @@ export function StaffRequestQueue() {
             </thead>
             <tbody>
               {requests.map((request) => (
-                <tr className="border-b border-zinc-100 align-top" key={request.id}>
+                <tr key={request.id}>
                   <td className="py-4 pr-4">
                     <p className="font-medium text-zinc-900">{request.residentName || "Resident"}</p>
                     <p className="mt-1 text-xs text-zinc-500">{request.requestNumber}</p>
@@ -208,13 +207,14 @@ export function StaffRequestQueue() {
                     <p className="text-zinc-800">{documentLabels[request.documentType] ?? request.documentType}</p>
                     <p className="mt-1 max-w-sm text-xs text-zinc-500">{request.purpose}</p>
                   </td>
+                  <td className="py-4 pr-4"><span className="status-pill" data-status={request.status}>{request.status.replaceAll("_", " ")}</span></td>
                   <td className="py-4 pr-4 text-zinc-700">
                     {new Date(request.submittedAt).toLocaleDateString()}
                   </td>
                   <td className="py-4 pr-4 text-zinc-700">{request.attachmentCount}</td>
                   <td className="py-4">
                     <Link
-                      className="font-medium text-emerald-800 underline"
+                      className="queue-review-link"
                       href={`/staff/requests/${request.id}`}
                     >
                       Review
@@ -227,7 +227,7 @@ export function StaffRequestQueue() {
         </div>
       )}
       {!isLoading && total > 0 && (
-        <nav aria-label="Request pages" className="flex items-center justify-between border-t border-zinc-200 py-4">
+        <nav aria-label="Request pages" className="queue-pagination">
           <button
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={page <= 1}

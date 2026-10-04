@@ -284,9 +284,9 @@ export function StaffRequestReview() {
     }
   }
 
-  if (isLoading) return <p className="text-sm text-zinc-600">Loading request...</p>;
+  if (isLoading) return <p className="loading-state" role="status">Loading request details...</p>;
   if (isForbidden) {
-    return <p className="rounded-md border border-amber-300 bg-amber-50 p-5 text-sm text-zinc-800">Staff access is required to review requests.</p>;
+    return <p className="notice-panel notice-panel--warning">Staff access is required to review requests.</p>;
   }
   if (!request) {
     return <p className="text-sm text-red-700">{message || "Request not found."}</p>;
@@ -299,8 +299,8 @@ export function StaffRequestReview() {
   const canDecide = request.status === "under_review";
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 pb-5">
+    <div className="request-review">
+      <div className="request-review__header">
         <div>
           <Link className="text-sm font-medium text-emerald-800 underline" href="/staff/requests">Back to queue</Link>
           <h2 className="mt-3 text-xl font-semibold text-zinc-950">
@@ -308,15 +308,15 @@ export function StaffRequestReview() {
           </h2>
           <p className="mt-1 text-sm text-zinc-600">Receipt {request.requestNumber}</p>
         </div>
-        <span className="h-fit rounded-sm border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700">
+        <span className="status-pill" data-status={request.status}>
           {statusLabels[request.status] ?? request.status}
         </span>
       </div>
 
-      <section className="grid gap-8 md:grid-cols-2">
-        <div>
-          <h3 className="font-semibold text-zinc-950">Resident details</h3>
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+      <section className="review-summary">
+        <div className="review-summary__block">
+          <h3>Resident details</h3>
+          <dl>
             <dt className="text-zinc-500">Name</dt><dd className="text-zinc-900">{residentName || "Not provided"}</dd>
             <dt className="text-zinc-500">Birth date</dt><dd className="text-zinc-900">{request.birthDate || "Not provided"}</dd>
             <dt className="text-zinc-500">Civil status</dt><dd className="text-zinc-900">{request.civilStatus || "Not provided"}</dd>
@@ -336,16 +336,16 @@ export function StaffRequestReview() {
             <dd className="text-zinc-900">{request.assignedTo ? request.assignedToName || "Assigned staff" : "Unassigned"}</dd>
           </dl>
         </div>
-        <div>
-          <h3 className="font-semibold text-zinc-950">Request purpose</h3>
+        <div className="review-summary__block">
+          <h3>Request purpose</h3>
           <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">{request.purpose}</p>
           <p className="mt-2 text-xs text-zinc-500">Submitted {new Date(request.submittedAt).toLocaleString()}</p>
           {request.decisionNote && <p className="mt-3 text-sm text-zinc-700">Latest note: {request.decisionNote}</p>}
         </div>
       </section>
 
-      <section className="border-t border-zinc-200 pt-6">
-        <h3 className="font-semibold text-zinc-950">Supporting files</h3>
+      <section className="review-section">
+        <h3>Supporting files</h3>
         {request.attachments.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-600">No files attached.</p>
         ) : (
@@ -367,8 +367,8 @@ export function StaffRequestReview() {
         )}
       </section>
 
-      <section className="border-t border-zinc-200 pt-6">
-        <h3 className="font-semibold text-zinc-950">Status history</h3>
+      <section className="review-section">
+        <h3>Status history</h3>
         <ol className="mt-3 space-y-3">
           {request.history.map((event, index) => (
             <li className="border-l-2 border-emerald-700 pl-3 text-sm" key={`${event.changedAt}-${index}`}>
@@ -381,14 +381,14 @@ export function StaffRequestReview() {
       </section>
 
       {(canStartReview || canDecide) && (
-        <section className="border-t border-zinc-200 pt-6">
-          <h3 className="font-semibold text-zinc-950">Review decision</h3>
+          <section className="review-section">
+            <h3>Review decision</h3>
           <label className="mt-3 block space-y-1 text-sm font-medium text-zinc-800">
             Staff note
             <textarea className="min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20" maxLength={500} onChange={(event) => setNote(event.target.value)} value={note} />
           </label>
           {message && <p aria-live="polite" className={`mt-3 text-sm ${isError ? "text-red-700" : "text-emerald-800"}`}>{message}</p>}
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="review-actions">
             {canStartReview && <button className="rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-900 disabled:opacity-60" disabled={isSaving} onClick={() => void applyDecision("start_review")} type="button">{request.status === "submitted" ? "Start review" : "Resume review"}</button>}
             {canDecide && <>
               <button className="rounded-md border border-amber-400 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-50 disabled:opacity-60" disabled={isSaving} onClick={() => void applyDecision("request_information")} type="button">Request information</button>
@@ -400,8 +400,8 @@ export function StaffRequestReview() {
       )}
 
       {request.status === "approved" && !request.issuedDocumentId && (
-        <section className="border-t border-zinc-200 pt-6">
-          <h3 className="font-semibold text-zinc-950">Document issuance</h3>
+        <section className="review-section">
+          <h3>Document issuance</h3>
           <p className="mt-2 text-sm text-zinc-600">Generate a private PDF with a signed QR verification link.</p>
           {message && <p aria-live="polite" className={`mt-3 text-sm ${isError ? "text-red-700" : "text-emerald-800"}`}>{message}</p>}
           <button
@@ -416,8 +416,8 @@ export function StaffRequestReview() {
       )}
 
       {request.status === "issued" && request.issuedDocumentId && (
-        <section className="border-t border-zinc-200 pt-6">
-          <h3 className="font-semibold text-zinc-950">Issued document</h3>
+        <section className="review-section">
+          <h3>Issued document</h3>
           <p className="mt-2 text-sm text-zinc-700">Serial {request.issuedSerialNumber}</p>
           <p className="mt-1 text-xs text-zinc-500">Issued {request.issuedAt ? new Date(request.issuedAt).toLocaleString() : ""}</p>
           {request.issuedIsRevoked ? (

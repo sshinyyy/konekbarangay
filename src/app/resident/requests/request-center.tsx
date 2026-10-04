@@ -278,6 +278,10 @@ export function RequestCenter() {
   const [profileRequired, setProfileRequired] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const inProgressCount = requests.filter((request) =>
+    ["submitted", "under_review", "needs_information", "approved", "generating", "ready_for_issuance"].includes(request.status),
+  ).length;
+  const issuedCount = requests.filter((request) => request.status === "issued" && !request.issuedIsRevoked).length;
 
   useEffect(() => {
     let isCurrent = true;
@@ -432,17 +436,17 @@ export function RequestCenter() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-zinc-600">Loading requests...</p>;
+    return <p className="loading-state" role="status">Loading your requests...</p>;
   }
 
   if (profileRequired) {
     return (
-      <div className="rounded-md border border-amber-300 bg-amber-50 p-5">
+      <div className="notice-panel notice-panel--warning">
         <h2 className="font-semibold text-zinc-900">Complete your resident profile first</h2>
         <p className="mt-1 text-sm text-zinc-700">
           A complete profile is needed before you can submit a document request.
         </p>
-        <Link className="mt-4 inline-block font-medium text-emerald-800 underline" href="/resident/profile">
+        <Link className="button-primary mt-4" href="/resident/profile">
           Complete profile
         </Link>
       </div>
@@ -450,19 +454,27 @@ export function RequestCenter() {
   }
 
   return (
-    <div className="space-y-8">
-      <section aria-labelledby="updates-heading" className="border-b border-zinc-200 pb-6">
+    <div className="request-center">
+      <div aria-label="Request overview" className="metric-strip">
+        <div><span>Total requests</span><strong>{requests.length}</strong></div>
+        <div><span>In progress</span><strong>{inProgressCount}</strong></div>
+        <div><span>Documents issued</span><strong>{issuedCount}</strong></div>
+        <div><span>Unread updates</span><strong>{unreadCount}</strong></div>
+      </div>
+
+      <div className="request-center__top">
+      <section aria-labelledby="updates-heading" className="updates-panel">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-semibold text-zinc-950" id="updates-heading">Updates</h2>
-          <p className="text-sm text-zinc-600">{unreadCount} unread</p>
+          <h2 className="section-title" id="updates-heading">Recent updates</h2>
+          <p className="section-meta">{unreadCount} unread</p>
         </div>
         {notificationError && <p aria-live="polite" className="mt-3 text-sm text-red-700">{notificationError}</p>}
         {notifications.length === 0 ? (
           <p className="mt-3 text-sm text-zinc-600">No updates yet.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-zinc-100">
+          <ul className="updates-list">
             {notifications.map((notification) => (
-              <li className="flex flex-wrap items-start justify-between gap-3 py-3" key={notification.id}>
+              <li className="updates-list__item" key={notification.id}>
                 <div className="flex min-w-0 items-start gap-2">
                   {!notification.readAt && <span aria-label="Unread" className="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-700" />}
                   <div>
@@ -474,7 +486,7 @@ export function RequestCenter() {
                 </div>
                 {!notification.readAt && (
                   <button
-                    className="text-xs font-medium text-emerald-800 underline disabled:opacity-50"
+                    className="quiet-action"
                     disabled={markingNotificationId !== null}
                     onClick={() => void markNotificationRead(notification)}
                     type="button"
@@ -488,12 +500,15 @@ export function RequestCenter() {
         )}
       </section>
 
-      <form className="space-y-4 border-b border-zinc-200 pb-8" onSubmit={handleSubmit}>
+      <form className="request-form" onSubmit={handleSubmit}>
+        <div className="request-form__heading">
+          <div><p className="page-kicker">New request</p><h2 className="section-title">Choose a document</h2></div>
+          <span className="form-step">Step 1 of 1</span>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1 text-sm font-medium text-zinc-800">
             Document
             <select
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
               onChange={(event) => setDocumentType(event.target.value as DocumentType)}
               value={documentType}
             >
@@ -505,7 +520,7 @@ export function RequestCenter() {
           <label className="space-y-1 text-sm font-medium text-zinc-800">
             Purpose
             <textarea
-              className="min-h-24 w-full resize-y rounded-md border border-zinc-300 px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
+              className="min-h-24 w-full resize-y"
               maxLength={500}
               onChange={(event) => setPurpose(event.target.value)}
               placeholder="What will the document be used for?"
@@ -520,23 +535,24 @@ export function RequestCenter() {
           </p>
         )}
         <button
-          className="rounded-md bg-emerald-800 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+          className="button-primary"
           disabled={isSubmitting}
           type="submit"
         >
           {isSubmitting ? "Submitting..." : "Submit request"}
         </button>
       </form>
+      </div>
 
-      <section aria-labelledby="requests-heading">
-        <h2 className="text-lg font-semibold text-zinc-950" id="requests-heading">Your requests</h2>
+      <section aria-labelledby="requests-heading" className="request-list-section">
+        <div className="section-heading-row"><h2 className="section-title" id="requests-heading">Your requests</h2><span className="section-meta">Newest first</span></div>
         {requests.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-600">No document requests yet.</p>
+          <p className="empty-state">No document requests yet.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-200">
+          <ul className="request-list">
             {requests.map((request) => (
-              <li className="grid gap-2 py-4 sm:grid-cols-[1fr_auto]" key={request.id}>
-                <div>
+              <li className="request-item" key={request.id}>
+                <div className="request-item__main">
                   <p className="font-medium text-zinc-900">{documentLabels[request.documentType]}</p>
                   <p className="mt-1 text-sm text-zinc-600">
                     Receipt {request.requestNumber} · {new Date(request.submittedAt).toLocaleDateString()}
@@ -566,7 +582,7 @@ export function RequestCenter() {
                     request={request}
                   />
                 </div>
-                <span className="h-fit rounded-sm border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700">
+                <span className="status-pill" data-status={request.status}>
                   {statusLabels[request.status]}
                 </span>
               </li>

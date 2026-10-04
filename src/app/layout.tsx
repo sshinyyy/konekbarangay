@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SiteHeader } from "./components/site-header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,7 +25,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SiteHeader />
+        <div className="app-content">{children}</div>
+        <footer className="site-footer">
+          <div className="site-footer__inner">
+            <span>KoneBarangay <span aria-hidden="true">·</span> Barangay services</span>
+            <Link href="/">Home</Link>
+          </div>
+        </footer>
+      </body>
     </html>
   );
 }

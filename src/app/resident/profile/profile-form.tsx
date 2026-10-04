@@ -186,59 +186,71 @@ export function ProfileForm() {
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {fields.slice(0, 4).map((field) => (
-          <label className="space-y-1 text-sm font-medium text-zinc-800" key={field.name}>
-            {field.label}
+    <form className="profile-form" onSubmit={handleSubmit}>
+      <section className="profile-section">
+        <div className="profile-section__heading">
+          <h2>Personal details</h2>
+          <p>Enter your name as it should appear on barangay documents.</p>
+        </div>
+        <div className="profile-grid">
+          {fields.slice(0, 4).map((field) => (
+            <label key={field.name}>
+              {field.label}
+              <input
+                autoComplete={field.name === "firstName" ? "given-name" : field.name === "lastName" ? "family-name" : "off"}
+                onChange={(event) => updateField(field.name, event.target.value)}
+                required={field.required}
+                value={profile[field.name]}
+              />
+            </label>
+          ))}
+          <label>
+            Date of birth
             <input
-              autoComplete={field.name === "firstName" ? "given-name" : field.name === "lastName" ? "family-name" : "off"}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
-              onChange={(event) => updateField(field.name, event.target.value)}
-              required={field.required}
-              value={profile[field.name]}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(event) => updateField("birthDate", event.target.value)}
+              required
+              type="date"
+              value={profile.birthDate}
             />
           </label>
-        ))}
-        <label className="space-y-1 text-sm font-medium text-zinc-800">
-          Date of birth
-          <input
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(event) => updateField("birthDate", event.target.value)}
-            required
-            type="date"
-            value={profile.birthDate}
-          />
-        </label>
-        <label className="space-y-1 text-sm font-medium text-zinc-800">
-          Civil status
-          <select
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
-            onChange={(event) => updateField("civilStatus", event.target.value)}
-            value={profile.civilStatus}
-          >
-            <option value="">Select status</option>
-            <option value="Single">Single</option>
-            <option value="Married">Married</option>
-            <option value="Widowed">Widowed</option>
-            <option value="Separated">Separated</option>
-            <option value="Other">Other</option>
-          </select>
-        </label>
-        {fields.slice(4).map((field) => (
-          <label className="space-y-1 text-sm font-medium text-zinc-800" key={field.name}>
-            {field.label}
-            <input
-              autoComplete="off"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 font-normal outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20"
-              onChange={(event) => updateField(field.name, event.target.value)}
-              required={field.required}
-              value={profile[field.name]}
-            />
+          <label>
+            Civil status
+            <select onChange={(event) => updateField("civilStatus", event.target.value)} value={profile.civilStatus}>
+              <option value="">Select status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Separated">Separated</option>
+              <option value="Other">Other</option>
+            </select>
           </label>
-        ))}
-      </div>
+          <label>
+            Contact number
+            <input autoComplete="tel" onChange={(event) => updateField("contactNumber", event.target.value)} value={profile.contactNumber} />
+          </label>
+        </div>
+      </section>
+
+      <section className="profile-section">
+        <div className="profile-section__heading">
+          <h2>Home address</h2>
+          <p>Use your current residential address.</p>
+        </div>
+        <div className="profile-grid">
+          {fields.slice(5).map((field) => (
+            <label key={field.name}>
+              {field.label}
+              <input
+                autoComplete="off"
+                onChange={(event) => updateField(field.name, event.target.value)}
+                required={field.required}
+                value={profile[field.name]}
+              />
+            </label>
+          ))}
+        </div>
+      </section>
       {message && (
         <p aria-live="polite" className={`text-sm ${isError ? "text-red-700" : "text-emerald-800"}`}>
           {message}

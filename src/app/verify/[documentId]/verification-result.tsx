@@ -49,17 +49,18 @@ export function VerificationResultView({ documentId, token }: { documentId: stri
   const isValid = result?.valid === true;
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-12">
-      <section className="mx-auto max-w-xl rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">Barangay document check</p>
-        <h1 className="mt-2 text-2xl font-semibold text-zinc-950">QR verification</h1>
+    <main className="verification-page">
+      <section aria-labelledby="verification-title" className="verification-card">
+        <p className="page-kicker">Public document check</p>
+        <h1 className="page-title" id="verification-title">QR verification</h1>
+        <p className="verification-card__lead">Check the current status of a document issued by the barangay.</p>
 
         {failed ? (
           <p aria-live="polite" className="mt-6 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
             Verification is temporarily unavailable. Try again later; do not treat the document as verified.
           </p>
         ) : result ? (
-          <div className={`mt-6 rounded-md border p-4 ${isValid ? "border-emerald-300 bg-emerald-50 text-emerald-950" : "border-red-300 bg-red-50 text-red-950"}`}>
+          <div className={`verification-result ${isValid ? "verification-result--valid" : "verification-result--invalid"}`}>
             <p className="font-semibold">{statusMessages[result.status]}</p>
             {result.document && (
               <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -78,7 +79,7 @@ export function VerificationResultView({ documentId, token }: { documentId: stri
         ) : (
           <p className="mt-6 text-sm text-zinc-600">Checking document status...</p>
         )}
-        <p className="mt-6 text-xs text-zinc-500">
+        <p className="verification-card__note">
           This check confirms document status only; it does not verify the bearer’s identity.
         </p>
       </section>
