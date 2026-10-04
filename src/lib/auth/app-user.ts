@@ -3,6 +3,7 @@ import "server-only";
 import { getDatabasePool } from "@/lib/db/pool";
 
 export type AppRole = "resident" | "staff" | "admin";
+export type AppUserIdentityColumn = "auth_user_id" | "firebase_uid";
 
 export type ActiveAppUser = {
   id: string;
@@ -15,14 +16,38 @@ type AppUserRecord = ActiveAppUser & {
 
 export class ResidentRegistrationConflictError extends Error {}
 
+export async function resolveAppUserIdentityColumn(): Promise<AppUserIdentityColumn> {
+  const result = await getDatabasePool().query<{ column_name: string }>(`
+    SELECT column_name
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'app_users'
+       AND column_name IN ('auth_user_id', 'firebase_uid')
+     ORDER BY CASE column_name WHEN 'auth_user_id' THEN 0 ELSE 1 END, column_name
+  `);
+
+  const columns = result.rows.map((row) => row.column_name);
+
+  if (columns.includes("auth_user_id")) {
+    return "auth_user_id";
+  }
+
+  if (columns.includes("firebase_uid")) {
+    return "firebase_uid";
+  }
+
+  throw new Error("app_users table is missing the required auth user identifier column.");
+}
+
 export async function findActiveAppUser(
   authUserId: string,
 ): Promise<ActiveAppUser | null> {
+  const identityColumn = await resolveAppUserIdentityColumn();
   const result = await getDatabasePool().query<ActiveAppUser>(
     `SELECT id, role
      FROM app_users
-    WHERE auth_user_id = $1 AND is_active = true`,
-      [authUserId],
+    WHERE ${identityColumn} = $1 AND is_active = true`,
+    [authUserId],
   );
 
   return result.rows[0] ?? null;
@@ -35,11 +60,12 @@ export async function registerResidentAccount(input: {
   emailVerified: boolean;
 }) {
   const pool = getDatabasePool();
+  const identityColumn = await resolveAppUserIdentityColumn();
 
   if (input.emailVerified) {
     const linked = await pool.query<AppUserRecord>(
       `UPDATE app_users
-       SET auth_user_id = $1,
+       SET ${identityColumn} = $1,
            email = $2,
            display_name = $3,
            updated_at = now()
@@ -49,12 +75,12 @@ export async function registerResidentAccount(input: {
          WHERE lower(email) = lower($2)
            AND role = 'resident'
            AND is_active = true
-           AND auth_user_id <> $1
+           AND ${identityColumn} <> $1
          ORDER BY created_at
          LIMIT 1
        )
          AND NOT EXISTS (
-           SELECT 1 FROM app_users WHERE auth_user_id = $1
+           SELECT 1 FROM app_users WHERE ${identityColumn} = $1
          )
        RETURNING id, role, is_active`,
       [input.authUserId, input.email, input.displayName],
@@ -66,9 +92,9 @@ export async function registerResidentAccount(input: {
   }
 
   const inserted = await pool.query<AppUserRecord>(
-    `INSERT INTO app_users (auth_user_id, role, email, display_name)
+    `INSERT INTO app_users (${identityColumn}, role, email, display_name)
      VALUES ($1, 'resident', $2, $3)
-     ON CONFLICT (auth_user_id) DO NOTHING
+     ON CONFLICT (${identityColumn}) DO NOTHING
      RETURNING id, role, is_active`,
     [input.authUserId, input.email, input.displayName],
   );
@@ -80,8 +106,8 @@ export async function registerResidentAccount(input: {
   const existing = await pool.query<AppUserRecord>(
     `SELECT id, role, is_active
      FROM app_users
-    WHERE auth_user_id = $1`,
-      [input.authUserId],
+    WHERE ${identityColumn} = $1`,
+    [input.authUserId],
   );
   const account = existing.rows[0];
 

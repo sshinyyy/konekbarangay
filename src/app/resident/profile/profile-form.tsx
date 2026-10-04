@@ -59,6 +59,20 @@ export function ProfileForm() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  function getMissingRequiredFields() {
+    const requiredFields: Array<keyof ProfileFields> = [
+      "firstName",
+      "lastName",
+      "birthDate",
+      "houseStreet",
+      "barangay",
+      "municipality",
+      "province",
+    ];
+
+    return requiredFields.filter((field) => !String(profile[field] ?? "").trim());
+  }
+
   useEffect(() => {
     let isCurrent = true;
     void getSupabaseClient().auth.getSession().then(async ({ data, error }) => {
@@ -120,9 +134,17 @@ export function ProfileForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSaving(true);
     setIsError(false);
     setMessage("");
+
+    const missingRequiredFields = getMissingRequiredFields();
+    if (missingRequiredFields.length > 0) {
+      setIsError(true);
+      setMessage("Complete the required profile fields before saving.");
+      return;
+    }
+
+    setIsSaving(true);
 
     try {
       const { data: { session } } = await getSupabaseClient().auth.getSession();
@@ -146,6 +168,7 @@ export function ProfileForm() {
       }
 
       setMessage("Profile saved.");
+      router.replace("/resident/requests");
     } catch {
       setIsError(true);
       setMessage("Could not save your profile. Check the required fields and try again.");
@@ -227,7 +250,7 @@ export function ProfileForm() {
           disabled={isSaving}
           type="submit"
         >
-          {isSaving ? "Saving..." : "Save profile"}
+          {isSaving ? "Saving..." : "Complete profile"}
         </button>
         <Link className="text-sm font-medium text-emerald-800 underline" href="/resident/requests">
           Go to document requests

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn, signOut } from "@/lib/supabase/client";
 
 type VerifiedIdentity = {
@@ -11,11 +12,43 @@ type VerifiedIdentity = {
 };
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [identity, setIdentity] = useState<VerifiedIdentity | null>(null);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function redirectResidentAfterLogin(accessToken: string) {
+    const response = await fetch("/api/resident/profile", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      router.replace("/resident/profile");
+      return;
+    }
+
+    const result = (await response.json()) as {
+      profile: {
+        firstName?: string | null;
+        lastName?: string | null;
+        birthDate?: string | null;
+        houseStreet?: string | null;
+        barangay?: string | null;
+        municipality?: string | null;
+        province?: string | null;
+      } | null;
+    };
+
+    const profile = result.profile;
+    const isProfileComplete = !!profile &&
+      !!profile.firstName && !!profile.lastName && !!profile.birthDate &&
+      !!profile.houseStreet && !!profile.barangay && !!profile.municipality && !!profile.province;
+
+    router.replace(isProfileComplete ? "/resident/requests" : "/resident/profile");
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,7 +99,12 @@ export function LoginForm() {
         return;
       }
 
-      setIdentity((await response.json()) as VerifiedIdentity);
+      const nextIdentity = (await response.json()) as VerifiedIdentity;
+      setIdentity(nextIdentity);
+
+      if (nextIdentity.role === "resident") {
+        await redirectResidentAfterLogin(session.access_token);
+      }
     } catch {
       setMessage("Sign-in failed. Check your email and password, then try again.");
     } finally {
