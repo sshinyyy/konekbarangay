@@ -127,20 +127,20 @@ export function LoginForm() {
           <p className="mt-1">{identity.email ?? identity.uid}</p>
           <p className="mt-1 capitalize">Role: {identity.role}</p>
         </div>
-        {identity.role === "resident" && (
-          <Link
-            className="block w-full rounded-md bg-emerald-800 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-emerald-900"
-            href="/resident/profile"
-          >
-            Open resident profile
-          </Link>
-        )}
         {(identity.role === "staff" || identity.role === "admin") && (
           <Link
             className="block w-full rounded-md bg-emerald-800 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-emerald-900"
             href="/staff/requests"
           >
             Open staff request queue
+          </Link>
+        )}
+        {identity.role === "resident" && (
+          <Link
+            className="block w-full rounded-md bg-emerald-800 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-emerald-900"
+            href="/resident/requests"
+          >
+            Open resident requests
           </Link>
         )}
         <button
