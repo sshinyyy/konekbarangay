@@ -4,38 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { getSupabaseClient } from "@/lib/supabase/client";
-
-type ProfileFields = {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  suffix: string;
-  birthDate: string;
-  civilStatus: string;
-  contactNumber: string;
-  houseStreet: string;
-  purokSitio: string;
-  barangay: string;
-  municipality: string;
-  province: string;
-  postalCode: string;
-};
-
-const emptyProfile: ProfileFields = {
-  firstName: "",
-  middleName: "",
-  lastName: "",
-  suffix: "",
-  birthDate: "",
-  civilStatus: "",
-  contactNumber: "",
-  houseStreet: "",
-  purokSitio: "",
-  barangay: "",
-  municipality: "",
-  province: "",
-  postalCode: "",
-};
+import {
+  emptyProfile,
+  hasProfileChanged,
+  isProfileComplete,
+  profileFieldsFromRecord,
+  type ProfileFields,
+  type ResidentProfileRecord,
+} from "./profile-form-state";
 
 const fields: { name: keyof ProfileFields; label: string; required?: boolean }[] = [
   { name: "firstName", label: "First name", required: true },
@@ -54,24 +30,12 @@ const fields: { name: keyof ProfileFields; label: string; required?: boolean }[]
 export function ProfileForm() {
   const router = useRouter();
   const [profile, setProfile] = useState(emptyProfile);
+  const [savedProfile, setSavedProfile] = useState<ProfileFields | null>(null);
+  const [isEditing, setIsEditing] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
-
-  function getMissingRequiredFields() {
-    const requiredFields: Array<keyof ProfileFields> = [
-      "firstName",
-      "lastName",
-      "birthDate",
-      "houseStreet",
-      "barangay",
-      "municipality",
-      "province",
-    ];
-
-    return requiredFields.filter((field) => !String(profile[field] ?? "").trim());
-  }
 
   useEffect(() => {
     let isCurrent = true;
@@ -97,17 +61,13 @@ export function ProfileForm() {
           throw new Error("Profile load failed");
         }
 
-        const result = (await response.json()) as {
-          profile: Partial<Record<keyof ProfileFields, string | null>> | null;
-        };
+        const result = (await response.json()) as { profile: ResidentProfileRecord };
 
-        if (isCurrent && result.profile) {
-          setProfile({
-            ...emptyProfile,
-            ...Object.fromEntries(
-              Object.entries(result.profile).map(([key, value]) => [key, value ?? ""]),
-            ),
-          });
+        if (isCurrent) {
+          const loadedProfile = profileFieldsFromRecord(result.profile);
+          setProfile(loadedProfile);
+          setSavedProfile(result.profile ? loadedProfile : null);
+          setIsEditing(!isProfileComplete(loadedProfile));
         }
       } catch {
         if (isCurrent) {
@@ -137,16 +97,22 @@ export function ProfileForm() {
     setIsError(false);
     setMessage("");
 
-    const missingRequiredFields = getMissingRequiredFields();
-    if (missingRequiredFields.length > 0) {
+    if (!isProfileComplete(profile)) {
       setIsError(true);
       setMessage("Complete the required profile fields before saving.");
+      return;
+    }
+
+    if (savedProfile && !hasProfileChanged(profile, savedProfile)) {
+      setIsEditing(false);
+      setMessage("No changes to save.");
       return;
     }
 
     setIsSaving(true);
 
     try {
+      const wasAlreadyComplete = savedProfile !== null && isProfileComplete(savedProfile);
       const { data: { session } } = await getSupabaseClient().auth.getSession();
       if (!session) {
         router.replace("/login");
@@ -162,16 +128,35 @@ export function ProfileForm() {
         body: JSON.stringify(profile),
       });
 
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+        issues?: Array<{ message?: string }>;
+        profile?: ResidentProfileRecord;
+      } | null;
+
       if (!response.ok) {
-        const result = (await response.json()) as { error?: string };
-        throw new Error(result.error ?? "Profile save failed");
+        if (response.status === 401 || response.status === 403) {
+          router.replace("/login");
+          return;
+        }
+        if (result?.error === "invalid_profile") {
+          throw new Error(result.issues?.[0]?.message ?? "Check the profile details and try again.");
+        }
+        throw new Error("Your profile could not be saved. Your details are still here; please try again.");
       }
 
-      setMessage("Profile saved.");
-      router.replace("/resident/requests");
-    } catch {
+      const nextProfile = profileFieldsFromRecord(result?.profile ?? profile);
+      setProfile(nextProfile);
+      setSavedProfile(nextProfile);
+      setIsEditing(false);
+      if (!wasAlreadyComplete) {
+        router.replace("/resident/requests");
+      } else {
+        setMessage("Profile changes saved.");
+      }
+    } catch (error) {
       setIsError(true);
-      setMessage("Could not save your profile. Check the required fields and try again.");
+      setMessage(error instanceof Error ? error.message : "Your profile could not be saved. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -181,12 +166,62 @@ export function ProfileForm() {
     setProfile((current) => ({ ...current, [name]: value }));
   }
 
+  function cancelEditing() {
+    if (!savedProfile) return;
+    setProfile(savedProfile);
+    setIsEditing(false);
+    setIsError(false);
+    setMessage("");
+  }
+
   if (isLoading) {
-    return <p className="text-sm text-zinc-600">Loading profile...</p>;
+    return <p className="loading-state" role="status">Loading profile...</p>;
+  }
+
+  if (savedProfile && !isEditing) {
+    const fullName = [savedProfile.firstName, savedProfile.middleName, savedProfile.lastName, savedProfile.suffix]
+      .filter(Boolean)
+      .join(" ");
+    const address = [
+      savedProfile.houseStreet,
+      savedProfile.purokSitio,
+      savedProfile.barangay,
+      savedProfile.municipality,
+      savedProfile.province,
+      savedProfile.postalCode,
+    ].filter(Boolean).join(", ");
+
+    return (
+      <div className="profile-readonly">
+        <div className="profile-readonly__header">
+          <div>
+            <span className="profile-complete-badge">Profile complete</span>
+            <p>Your profile is saved. Edit it only when your details change.</p>
+          </div>
+          <button className="button-secondary" onClick={() => { setIsEditing(true); setMessage(""); }} type="button">
+            Edit profile
+          </button>
+        </div>
+        <dl className="profile-summary-grid">
+          <div><dt>Full name</dt><dd>{fullName}</dd></div>
+          <div><dt>Date of birth</dt><dd>{savedProfile.birthDate}</dd></div>
+          <div><dt>Civil status</dt><dd>{savedProfile.civilStatus || "Not provided"}</dd></div>
+          <div><dt>Contact number</dt><dd>{savedProfile.contactNumber || "Not provided"}</dd></div>
+          <div className="profile-summary-grid__wide"><dt>Home address</dt><dd>{address}</dd></div>
+        </dl>
+        {message && <p aria-live="polite" className="profile-form__message">{message}</p>}
+        <Link className="button-primary profile-readonly__requests" href="/resident/requests">Go to document requests</Link>
+      </div>
+    );
   }
 
   return (
     <form className="profile-form" onSubmit={handleSubmit}>
+      {savedProfile && (
+        <div className="profile-editor__heading">
+          <div><h2>Edit profile</h2><p>Saving changes may require staff to verify your profile again.</p></div>
+        </div>
+      )}
       <section className="profile-section">
         <div className="profile-section__heading">
           <h2>Personal details</h2>
@@ -258,12 +293,17 @@ export function ProfileForm() {
       )}
       <div className="flex flex-wrap items-center gap-4">
         <button
-          className="rounded-md bg-emerald-800 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+          className="button-primary"
           disabled={isSaving}
           type="submit"
         >
-          {isSaving ? "Saving..." : "Complete profile"}
+          {isSaving ? "Saving..." : savedProfile ? "Save profile changes" : "Complete profile"}
         </button>
+        {savedProfile && (
+          <button className="button-secondary" disabled={isSaving} onClick={cancelEditing} type="button">
+            Cancel
+          </button>
+        )}
         <Link className="text-sm font-medium text-emerald-800 underline" href="/resident/requests">
           Go to document requests
         </Link>

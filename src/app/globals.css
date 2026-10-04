@@ -740,6 +740,95 @@ textarea:focus {
   gap: 24px;
 }
 
+.profile-readonly {
+  display: grid;
+  gap: 20px;
+}
+
+.profile-readonly__header,
+.profile-editor__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 17px;
+}
+
+.profile-readonly__header p,
+.profile-editor__heading p {
+  margin: 7px 0 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-complete-badge {
+  display: inline-flex;
+  border: 1px solid #a9d2bd;
+  border-radius: 999px;
+  background: #edf7f1;
+  color: #236145;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 6px 10px;
+}
+
+.profile-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.profile-summary-grid > div {
+  min-width: 0;
+  border-bottom: 1px solid #edf1ee;
+  padding: 14px 16px;
+}
+
+.profile-summary-grid > div:nth-child(odd) {
+  border-right: 1px solid #edf1ee;
+}
+
+.profile-summary-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.profile-summary-grid dt {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.profile-summary-grid dd {
+  margin: 5px 0 0;
+  color: #1d2c23;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.profile-readonly__requests {
+  justify-self: start;
+}
+
+.profile-editor__heading h2 {
+  margin: 0;
+  color: #1b2a22;
+  font-size: 16px;
+}
+
+.profile-form__message {
+  border-left: 3px solid var(--brand);
+  background: var(--wash);
+  color: var(--brand-deep);
+  font-size: 12px;
+  padding: 10px 13px;
+}
+
 .profile-section + .profile-section {
   border-top: 1px solid var(--line);
   padding-top: 22px;
@@ -1311,6 +1400,23 @@ textarea:focus {
 
   .profile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .profile-readonly__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-summary-grid > div:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .profile-summary-grid__wide {
+    grid-column: auto;
   }
 
   .metric-strip {
